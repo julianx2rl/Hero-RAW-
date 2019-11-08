@@ -4,7 +4,9 @@ var knowledge = [];
 
 var turnohecho = true;
 
-var temporary = ""; // Conocimiento temporal.
+var bloqueo = false;
+
+var temporary; // Conocimiento temporal.
 
 var _messageChannels = [0, 1, 2, 3, 4, 5, 6, 7];
 
@@ -21,14 +23,28 @@ async function startProgram() {
 	}
 }
 
-
+ (knowledge[i] == channel) {
+						
 
 async function onIRMessageX(channel) {
 	if(_messageChannels.includes(channel))
 	{
 		if(channel == 7){
 			var turnohecho = false; // Se ejecuto el tick
-		} else {
+			if(0 < doomcounter){
+				switch(channel) { // Solo espera una cosa, el llamado de ayuda de otros Spheros, porque ya sabe cuantos ticks pasaran antes de que se de el ataque.
+					
+				}
+				if(temporary == false){
+					--doomcounter;
+					if(doomcounter < 2){
+						playMatrixAnimation(2, true);
+					}
+				}else{
+					++doomcounter;
+				}
+			}
+		} else if (turnohecho == false) {
 			switch(channel) {
   				case 0: // Ataque Monstruo Ligero (Sphero no sabe eso al inicio)
   				case 1: // Ataque Monstruo Medio
@@ -38,23 +54,22 @@ async function onIRMessageX(channel) {
 					var entry = false;
 					
 					for (var i = 0; i < knowledge.length; i++) {
-						if (knowledge[i] == channel) {
-							entry = knowledge[i];
+						if	entry = knowledge[i];
 							break;
   						}
 					}
 					
 					if(entry != false){ // Si tiene conocimiento.
 						doomcounter = entry.duration;
+					} else {
+						temporary = channel;
 					}
 					
 					playMatrixAnimation(0, true);
 				break;
-				case 3:
-					if(knowledge[0].id = 1){
-						playMatrixAnimation(2, true);
-					}else{
-						playMatrixAnimation(1, true);
+				case 6: // El tick 6 es el que aturde!
+					if(temporary == false){
+						knowledge.push(KnowledgeEntry(temporary,doomcounter));
 					}
 				break;
   				default:
