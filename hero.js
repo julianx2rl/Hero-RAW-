@@ -2,9 +2,9 @@ var doomcounter = 0;
 
 var doomtotal = 0;
 
-var stuncounter = 0;
-
 var learningtimer = 0;
+
+var stuncounter = 0;
 
 var knowledge = []; // Base de conocimientos
 
@@ -49,7 +49,7 @@ function increasesecond(){
 		}
 		
 		if(bloqueo == false){
-			var block = Math.floor(Math.random() * 100);
+			var block = getRandomInt(0, 100);
 			if(block == 1){ // Probabilidad de 1% por segundo para bloquear sin saber.
 				bloqueo = true;
 			}
@@ -60,7 +60,8 @@ function increasesecond(){
 			bloqueo = false;
 			doomcounter = 0;
 		}
-	} else if(currentlystunned){
+	}
+	if(currentlystunned){
 		--stuncounter;
 		if(isEven(stuncounter)){
 			playMatrixAnimation(6, true);
@@ -80,6 +81,8 @@ function increasesecond(){
 			}
 			playMatrixAnimation(5, true);
 		}
+	} else {
+		sendIRMessage(7, 5);
 	}
 	
 	decision(); // Cada segundo analiza su situacion y decide que hacer
@@ -94,7 +97,7 @@ function decision(){
 		if(doomtotal * (2/3) <= doomcounter){ // Si quedan mas de 2/3 del ataque
 			startIRFollow(0, 1);
 			
-			var stop = Math.floor(Math.random() * 10);
+			var stop = getRandomInt(0, 10);
 			
 			if(stop < 8){ // 20% de probabilidad de no seguir
 				stopIRFollow();
@@ -103,13 +106,13 @@ function decision(){
 		}else if(doomtotal * (1/2) <= doomcounter){ // Si queda menos de 2/3 pero mas de la mitad
 				startIREvade(0, 1);
 				
-				var stop = Math.floor(Math.random() * 10);
+				var stop = getRandomInt(0, 10);
 				
 				if(stop < 9){ // 10% de probabilidad de no evadir
 					stopIRFollow();
 				}
-		} else { // Si queda menos de la mitad
-			// Debe bloquear
+		} else { // Si queda menos de la mitad de tiempo!
+			// Debe bloquear!
 			bloqueo = true;
 		}
 	}
