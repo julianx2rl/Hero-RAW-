@@ -12,8 +12,6 @@ var temporary = 666; // Donde se guarda el canal que estaba aprendiendo
 
 var bloqueo = false; // Si bloquea el tiempo de aturde se reduce!
 
-var decision = false; // Ha tomado una desicion respecto al ataque?
-
 var currentlylearning = false; // Esta contando para registrar conocimiento nuevo?
 
 var currentlystunned = false; // Si esta aturdido no puede actuar
@@ -88,7 +86,7 @@ function increasesecond(){
 }
 
 function decision(){
-	if((0 < doomcounter && currentlylearning == false) && (decision == false && bloqueo == false)){ // Está bajo ataque y ya sabe cuanto le queda!
+	if((0 < doomcounter && currentlylearning == false) && (bloqueo == false)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
 		// Doomcounter es el  contador el cual baja en tiempo real
 		
 		// Doomtotal es toda la cantidad de tiempo que dura el ataque
@@ -114,8 +112,6 @@ function decision(){
 			// Debe bloquear
 			bloqueo = true;
 		}
-					
-		decision = true
 	}
 }
 
@@ -165,7 +161,6 @@ async function onIRMessageX(channel) {
 					doomcounter = 0;
 					temporary = 666;
 				}
-				decision = false;
 				if(channel == 3){
 					knowledge.push(KnowledgeEntry(0,45)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
 				}else if(channel == 4){
@@ -176,20 +171,19 @@ async function onIRMessageX(channel) {
 			break;
 			case 6: // El tick 6 es el que aturde!
 				if(temporary != 666){
-					decision = false;
 					knowledge.push(KnowledgeEntry(temporary,doomcounter));
 					temporary = 666;
-					var multiplier = 2;
-					if(bloqueo)
-					{
-						multiplier = 1;
-					}
-					stuncounter = 4 * multiplier; // temporary * multiplier;
-					currentlystunned = true;
-					currentlylearning = false;
 					doomcounter = 0;
-					playMatrixAnimation(8, true);
 				}
+				var multiplier = 2;
+				if(bloqueo)
+				{
+					multiplier = 1;
+				}
+				stuncounter = 4 * multiplier; // temporary * multiplier;
+				currentlystunned = true;
+				currentlylearning = false;
+				playMatrixAnimation(8, true);
 			break;
 			default:
 				//playMatrixAnimation(3, true);
