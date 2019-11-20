@@ -73,10 +73,49 @@ function increasesecond(){
 		{
 			currentlystunned = false;
 			stuncounter = 0;
-			playMatrixAnimation(0, true);
+			if(temporary == 3){
+				sendIRMessage(3, 5);
+			}else if(temporary == 4){
+				sendIRMessage(4, 5);
+			}else{
+				sendIRMessage(5, 5);
+			}
+			playMatrixAnimation(5, true);
 		}
-	} else if (0 < doomcounter){
+	}
+	
+	decision(); // Cada segundo analiza su situacion y decide que hacer
+}
+
+function decision(){
+	if((0 < doomcounter && currentlylearning == false) && (decision == false && bloqueo == false)){ // Está bajo ataque y ya sabe cuanto le queda!
+		// Doomcounter es el  contador el cual baja en tiempo real
+		
+		// Doomtotal es toda la cantidad de tiempo que dura el ataque
 		--doomcounter;
+		if(doomtotal * (2/3) <= doomcounter){ // Si quedan mas de 2/3 del ataque
+			startIRFollow(0, 1);
+			
+			var stop = Math.floor(Math.random() * 10);
+			
+			if(stop < 8){ // 20% de probabilidad de no seguir
+				stopIRFollow();
+			}
+			
+		}else if(doomtotal * (1/2) <= doomcounter){ // Si queda menos de 2/3 pero mas de la mitad
+				startIREvade(0, 1);
+				
+				var stop = Math.floor(Math.random() * 10);
+				
+				if(stop < 9){ // 10% de probabilidad de no evadir
+					stopIRFollow();
+				}
+		} else { // Si queda menos de la mitad
+			// Debe bloquear
+			bloqueo = true;
+		}
+					
+		decision = true
 	}
 }
 
@@ -98,36 +137,7 @@ async function onIRMessageX(channel) {
 			case 2: // Ataque Monstruo Pesado
 				// Respuesta al ataque
 				// Agregar conocimiento - knowledge.push(KnowledgeEntry(1,1));
-				if((0 < doomcounter && currentlylearning == false) && (decision == false && bloqueo == false)){ // Está bajo ataque y ya sabe cuanto le queda!
-					// Doomcounter es el  contador el cual baja en tiempo real
-					
-					// Doomtotal es toda la cantidad de tiempo que dura el ataque
-					
-					if(doomtotal * (2/3) <= doomcounter){ // Si quedan mas de 2/3 del ataque
-						startIRFollow(0, 1);
-						
-						var stop = Math.floor(Math.random() * 10);
-						
-						if(stop < 8){ // 20% de probabilidad de no seguir
-							stopIRFollow();
-						}
-						
-					}else if(doomtotal * (1/2) <= doomcounter){ // Si queda menos de 2/3 pero mas de la mitad
-						startIREvade(0, 1);
-						
-						var stop = Math.floor(Math.random() * 10);
-						
-						if(stop < 9){ // 10% de probabilidad de no evadir
-							stopIRFollow();
-						}
-					} else { // Si queda menos de la mitad
-						// Debe bloquear
-						bloqueo = true;
-					}
-					
-					decision = true
-					
-				} else if (currentlylearning == false){ // Va a revizar si tiene conocimiento sobre el ataque actual
+				if (currentlylearning == false){ // Va a revizar si tiene conocimiento sobre el ataque actual
 					var entry = false;
 					
 					for (var i = 0; i < knowledge.length; i++) {
@@ -139,7 +149,7 @@ async function onIRMessageX(channel) {
 					
 					if(entry != false){ // Si tiene conocimiento.
 						doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
-						playMatrixAnimation(2, true); // Yeah... is BIG BRAIN TIME!!!
+						playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
 					} else {
 						temporary = channel; // Detecta nuevo tipo de ataque
 						currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
@@ -150,19 +160,31 @@ async function onIRMessageX(channel) {
 			case 3:
 			case 4:
 			case 5:
-				
+				if(currentlylearning){ // Va a cancelar el aprendizaje porque ya no necesita aprender, le estan pasando lo que ocupa
+					currentlylearning = false;
+					doomcounter = 0;
+					temporary = 666;
+				}
+				decision = false;
+				if(channel == 3){
+					knowledge.push(KnowledgeEntry(0,45)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
+				}else if(channel == 4){
+					knowledge.push(KnowledgeEntry(0,60));
+				}else{
+					knowledge.push(KnowledgeEntry(0,90));
+				}
 			break;
 			case 6: // El tick 6 es el que aturde!
 				if(temporary != 666){
 					decision = false;
 					knowledge.push(KnowledgeEntry(temporary,doomcounter));
 					temporary = 666;
-					var multiplier = 2
+					var multiplier = 2;
 					if(bloqueo)
 					{
-						multiplier = 1
+						multiplier = 1;
 					}
-					stuncounter = 4// temporary * multiplier;
+					stuncounter = 4 * multiplier; // temporary * multiplier;
 					currentlystunned = true;
 					currentlylearning = false;
 					doomcounter = 0;
