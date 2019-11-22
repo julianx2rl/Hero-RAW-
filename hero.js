@@ -76,14 +76,6 @@ function increasesecond(){
 		{
 			stuncounter = 0;
 			
-			// Version charral de transferencia (No funciona porque a este punto temporary siempre es 666)
-			if(temporary == 3){
-				sendIRMessage(3, 5);
-			}else if(temporary == 4){
-				sendIRMessage(4, 5);
-			}else{
-				sendIRMessage(5, 5);
-			}
 			playMatrixAnimation(9, true);
 		}
 	}
@@ -165,6 +157,7 @@ async function onIRMessageX(channel) {
 					}
 				
 					if(entry != false){ // Si tiene conocimiento.
+						sendIRMessage(channel + 3, 5);
 						doomtotal = entry.duration;
 						doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
 						playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
