@@ -39,7 +39,9 @@ function isEven(n) {
 }
 
 function increasesecond(){
-	sendIRMessage(7, 5);
+	if(stuncounter == 0){
+		sendIRMessage(7, 5);
+	}
 	if(currentlylearning){
 		++doomcounter; // Cronometro que determinara cuanto dura el ataque
 		if(isEven(doomcounter)){
