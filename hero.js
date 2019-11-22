@@ -40,7 +40,7 @@ function isEven(n) {
 
 function increasesecond(){
 	if(stuncounter == 0){
-		sendIRMessage(7, 5);
+		sendIRMessage(7, 200);
 	}
 	if(currentlylearning){
 		++doomcounter; // Cronometro que determinara cuanto dura el ataque
@@ -159,7 +159,7 @@ async function onIRMessageX(channel) {
 					}
 				
 					if(entry != false){ // Si tiene conocimiento.
-						sendIRMessage(channel + 3, 5);
+						sendIRMessage(channel + 3, 200);
 						doomtotal = entry.duration;
 						doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
 						playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
