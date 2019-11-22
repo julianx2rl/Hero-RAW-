@@ -83,11 +83,6 @@ function increasesecond(){
 				sendIRMessage(5, 5);
 			}
 			playMatrixAnimation(9, true);
-			
-			// TEMPORARY
-			
-			playMatrixAnimation(3, true); // Second attack incoming!
-			X012(1);
 		}
 	}
 }
@@ -97,56 +92,6 @@ async function startProgram() {
 	
 	var timeinc1 = setInterval(increasesecond, 1000);
 	var timeinc2 = setInterval(decision, 3000);
-	
-	//clearInterval();
-	//listenForIRMessage(_messageChannels);
-	X012(1);
-	await delay(20);
-	X6(6);
-}
-
-function X012(channel)
-{
-	// Respuesta al ataque
-	// Agregar conocimiento - knowledge.push(KnowledgeEntry(1,1));
-	if (currentlylearning == false){ // Va a revizar si tiene conocimiento sobre el ataque actual
-		var entry = false;
-	
-		for (var i = 0; i < knowledge.length; i++) {
-			if(knowledge[i].id == channel){
-				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
-				break;
-	  		}
-		}
-		
-		if(entry != false){ // Si tiene conocimiento.
-			doomtotal = entry.duration;
-			doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
-			playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
-		} else {
-			temporary = channel; // Detecta nuevo tipo de ataque
-			currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
-			playMatrixAnimation(1, true);
-		}
-	}
-}
-
-function X6(channel)
-{
-	if(temporary != 666){
-		knowledge.push(KnowledgeEntry(temporary,doomcounter));
-		temporary = 666;
-		doomcounter = 0;
-	}
-	var multiplier = 2;
-	if(bloqueo)
-	{
-		multiplier = 1;
-	}
-	stuncounter = 4 * multiplier; // temporary * multiplier;
-	currentlystunned = true;
-	currentlylearning = false;
-	playMatrixAnimation(7, true);
 }
 
 async function decision(){
@@ -214,10 +159,11 @@ async function onIRMessageX(channel) {
 						if(knowledge[i].id == channel){
 							entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
 							break;
-  						}
+	  					}
 					}
-					
+				
 					if(entry != false){ // Si tiene conocimiento.
+						doomtotal = entry.duration;
 						doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
 						playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
 					} else {
@@ -235,6 +181,16 @@ async function onIRMessageX(channel) {
 					doomcounter = 0;
 					temporary = 666;
 				}
+				
+				var entry = false;
+				
+				for (var i = 0; i < knowledge.length; i++) {
+					if(knowledge[i].id == channel - 3){
+						entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
+						arr.splice(i, 1); 
+  					}
+				}
+				
 				if(channel == 3){
 					knowledge.push(KnowledgeEntry(0,45)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
 				}else if(channel == 4){
@@ -244,8 +200,23 @@ async function onIRMessageX(channel) {
 				}
 			break;
 			case 6: // El tick 6 es el que aturde!
+				var entry = false;
+				var rem = false;
+				
+				for (var i = 0; i < knowledge.length; i++) {
+					if(knowledge[i].id == temporary){
+						entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
+						if(entry.duration < doomcounter){
+							arr.splice(i, 1);
+							rem = true;
+						}
+  					}
+				}
+				
 				if(temporary != 666){
-					knowledge.push(KnowledgeEntry(temporary,doomcounter));
+					if(rem){
+						knowledge.push(KnowledgeEntry(temporary,doomcounter));
+					}
 					temporary = 666;
 					doomcounter = 0;
 				}
@@ -257,7 +228,7 @@ async function onIRMessageX(channel) {
 				bloqueo = false;
 				stuncounter = 4 * multiplier; // temporary * multiplier;
 				currentlylearning = false;
-				playMatrixAnimation(8, true);
+				playMatrixAnimation(7, true);
 			break;
 			default:
 				//playMatrixAnimation(3, true);
