@@ -86,6 +86,8 @@ async function startProgram() {
 	
 	var timeinc1 = setInterval(increasesecond, 1000);
 	var timeinc2 = setInterval(decision, 3000);
+	
+	listenForIRMessage(_messageChannels);
 }
 
 async function decision(){
@@ -187,11 +189,11 @@ async function onIRMessageX(channel) {
 				}
 				
 				if(channel == 3){
-					knowledge.push(KnowledgeEntry(0,45)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
+					knowledge.push(KnowledgeEntry(0,15)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
 				}else if(channel == 4){
-					knowledge.push(KnowledgeEntry(1,60));
+					knowledge.push(KnowledgeEntry(1,30));
 				}else{
-					knowledge.push(KnowledgeEntry(2,90));
+					knowledge.push(KnowledgeEntry(2,45));
 				}
 			break;
 			case 6: // El tick 6 es el que aturde!
