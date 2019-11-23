@@ -14,7 +14,13 @@ var bloqueo = false; // Si bloquea el tiempo de aturde se reduce!
 
 var currentlylearning = false; // Esta contando para registrar conocimiento nuevo?
 
-var _messageChannels = [0, 1, 2, 3, 4, 5, 6, 7];
+var _messageChannels = [0, 1, 2, 3, 4, 5, 6]; // Channels that must be noticed.
+
+var _attackChannels = [0, 1, 2]; // Notice a monster charging a attack!
+
+var _learnChannels = [3, 4, 5]; // Notice an ally trying to help you!
+
+var _stunChannels = [6]; // Get dunked on!
 
 // Animations:
 // 0-Start!
@@ -39,68 +45,175 @@ function isEven(n) {
 }
 
 function increasesecond(){
-	if(stuncounter == 0){
-		sendIRMessage(7, 200);
-	}
+	// Is it learning?
 	if(currentlylearning){
-		++doomcounter; // Cronometro que determinara cuanto dura el ataque
-		if(isEven(doomcounter)){
-			playMatrixAnimation(5, true);
-		}else{
-			playMatrixAnimation(6, true);
-		}
-		
-		if(bloqueo == false){
-			var block = getRandomInt(0, 100);
-			if(block == 1){ // Probabilidad de 1% por segundo para bloquear sin saber.
-				bloqueo = true;
-			}
-		}
-		
-		if(60 < doomcounter){
-			currentlylearning = false;
-			bloqueo = false;
-			doomcounter = 0;
-		}
-	} else if (0 < doomcounter){
-		--doomcounter;
-		
-		if(doomcounter == 0)
-		{
-			doomtotal = 0;
+		learnfurther();
+	} else if (0 < doomcounter){ // Is it preparing for an incoming attack?
+		incomingAttack();
+	} else if (0 < stuncounter){ // If the monster stunned me I'll...
+		recover();
+	}
+}
+
+function learnfurther(){
+	++doomcounter; // Cronometro que determinara cuanto dura el ataque
+	
+	if(bloqueo == false){
+		var block = getRandomInt(0, 100);
+		if(block <= 1){ // Probabilidad de 1% por segundo para bloquear sin saber.
+			bloqueo = true;
 		}
 	}
-	if(0 < stuncounter){
-		--stuncounter;
-		if(stuncounter <= 0)
-		{
-			stuncounter = 0;
-			
-			playMatrixAnimation(9, true);
-		}
+	
+	if(50 < doomcounter){
+		currentlylearning = false;
+		bloqueo = false;
+		doomcounter = 0;
+	}
+}
+
+function incomingAttack(){
+	--doomcounter;
+	
+	if(doomcounter <= 0)
+	{
+		doomtotal = 0;
+	}
+}
+
+function recover(){
+	--doomcounter;
+	
+	if(doomcounter <= 0)
+	{
+		doomtotal = 0;
 	}
 }
 
 async function startProgram() {
 	playMatrixAnimation(0, true);
 	
-	var timeinc1 = setInterval(increasesecond, 1000);
-	var timeinc2 = setInterval(decision, 3000);
+	var timeinc1 = setInterval(increasesecond, 1000); // Increase / Decrease all the counters
+	var timeinc2 = setInterval(decision, 3000); // Checks if anyknowledge about the attack has been found, and acts accordingly
+	
+	listenForIRMessage(_messageChannels); // Awaits for any interactions
+}
+
+async function onIRMessageAttack(channel)
+{
+	if(_attackChannels.includes(channel) && (stuncounter <= 0))
+	{
+		// Respuesta al ataque
+		// Agregar conocimiento - knowledge.push(KnowledgeEntry(1,1));
+		if (currentlylearning){ // Va a revizar si tiene conocimiento sobre el ataque actual
+			currentlylearning = false;
+			temporary = 666;
+			doomcounter = 0;
+		}
+		var entry = false;
+		
+		for (var i = 0; i < knowledge.length; i++) {
+			if(knowledge[i].id == channel){
+				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
+				break;
+		  	}
+		}
+		
+		if(entry != false){ // Si tiene conocimiento.
+			sendIRMessage(channel + 3, 5);
+			doomtotal = entry.duration;
+			doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
+			playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
+		} else {
+			temporary = channel; // Detecta nuevo tipo de ataque
+			currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
+			playMatrixAnimation(1, true);
+		}
+	} else {
+		return;
+	}
+	
+	listenForIRMessage(_messageChannels);
+}registerEvent(EventType.onIRMessage, onIRMessageAttack);
+
+async function onIRMessageLearn(channel)
+{
+	if(_learnChannels.includes(channel) && (stuncounter <= 0))
+	{
+		if(currentlylearning){ // Va a cancelar el aprendizaje porque ya no necesita aprender, le estan pasando lo que ocupa
+			currentlylearning = false;
+			doomcounter = 0;
+			temporary = 666;
+		}
+		
+		// Aqui iria la revisión del conocimiento si los spheros pudiesen mandar variables...
+		
+		if(channel == 3){
+			knowledge.push(KnowledgeEntry(0,15)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
+		}else if(channel == 4){
+			knowledge.push(KnowledgeEntry(1,30));
+		}else if(channel == 5){
+			knowledge.push(KnowledgeEntry(2,45));
+		}
+	}else{
+		return;
+	}
+	
+	listenForIRMessage(_messageChannels);
+}registerEvent(EventType.onIRMessage, onIRMessageLearn);
+
+async function onIRMessageStun(channel)
+{
+	if(channel == 6 && (stuncounter <= 0))
+	{
+		var entry = false;
+		var rem = false; // Determina si el conocimiento ya obtenido previamente es obsoleto.
+		
+		for (var i = 0; i < knowledge.length; i++) {
+			if(knowledge[i].id == temporary){
+				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
+				if(entry.duration < doomcounter){
+					arr.splice(i, 1);
+					rem = true;
+				}
+  			}
+		}
+		
+		if(temporary != 666){
+			if(rem){
+				knowledge.push(KnowledgeEntry(temporary,doomcounter));
+			}
+			temporary = 666;
+			doomcounter = 0;
+		}
+		var multiplier = 2;
+		if(bloqueo)
+		{
+			multiplier = 1;
+		}
+		bloqueo = false;
+		stuncounter = 4 * multiplier; // temporary * multiplier;
+		currentlylearning = false;
+		playMatrixAnimation(7, true);
+	}else{
+		return;
+	}
 	
 	listenForIRMessage(_messageChannels);
 }
 
-async function decision(){
-	if((0 < doomcounter && currentlylearning == false) && (stuncounter <= 0)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
-		// Doomcounter es el  contador el cual baja en tiempo real
-		
+function decision(){
+	if(stuncounter <= 0){
+		// Attack if capable
+		sendIRMessage(7, 20);
+	}
+	
+	if((0 < doomcounter && 0 < doomtotal) && (stuncounter <= 0 && currentlylearning == false)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
 		// Doomtotal es toda la cantidad de tiempo que dura el ataque
 		if(doomtotal * (2/3) <= doomcounter){ // Si quedan mas de 2/3 del ataque
 			playMatrixAnimation(10, true); // Attack!
 			
 			startIRFollow(0, 1);
-			
-			var stop = getRandomInt(0, 10);
 			
 			await delay(2);
 			
@@ -110,8 +223,6 @@ async function decision(){
 			playMatrixAnimation(3, true); // Run away!
 			
 			startIREvade(0, 1);
-			
-			var stop = getRandomInt(0, 10);
 			
 			await delay(2);
 			
@@ -131,109 +242,11 @@ async function decision(){
 		
 		startIRFollow(0, 1);
 		
-		var stop = getRandomInt(0, 10);
-		
 		await delay(2);
 		
 		stopIRFollow();
 	}
 }					
-
-async function onIRMessageX(channel) {
-	if(_messageChannels.includes(channel) && (stuncounter <= 0))
-	{
-		switch(channel) {
-			case 0: // Ataque Monstruo Ligero (Sphero no sabe eso al inicio)
-			case 1: // Ataque Monstruo Medio
-			case 2: // Ataque Monstruo Pesado
-				// Respuesta al ataque
-				// Agregar conocimiento - knowledge.push(KnowledgeEntry(1,1));
-				if (currentlylearning == false){ // Va a revizar si tiene conocimiento sobre el ataque actual
-					var entry = false;
-					
-					for (var i = 0; i < knowledge.length; i++) {
-						if(knowledge[i].id == channel){
-							entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
-							break;
-	  					}
-					}
-				
-					if(entry != false){ // Si tiene conocimiento.
-						sendIRMessage(channel + 3, 200);
-						doomtotal = entry.duration;
-						doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
-						playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
-					} else {
-						temporary = channel; // Detecta nuevo tipo de ataque
-						currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
-						playMatrixAnimation(1, true);
-					}
-				}
-			break;
-			case 3:
-			case 4:
-			case 5:
-				if(currentlylearning){ // Va a cancelar el aprendizaje porque ya no necesita aprender, le estan pasando lo que ocupa
-					currentlylearning = false;
-					doomcounter = 0;
-					temporary = 666;
-				}
-				
-				var entry = false;
-				
-				for (var i = 0; i < knowledge.length; i++) {
-					if(knowledge[i].id == channel - 3){
-						entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
-						arr.splice(i, 1); 
-  					}
-				}
-				
-				if(channel == 3){
-					knowledge.push(KnowledgeEntry(0,15)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
-				}else if(channel == 4){
-					knowledge.push(KnowledgeEntry(1,30));
-				}else{
-					knowledge.push(KnowledgeEntry(2,45));
-				}
-			break;
-			case 6: // El tick 6 es el que aturde!
-				var entry = false;
-				var rem = false;
-				
-				for (var i = 0; i < knowledge.length; i++) {
-					if(knowledge[i].id == temporary){
-						entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
-						if(entry.duration < doomcounter){
-							arr.splice(i, 1);
-							rem = true;
-						}
-  					}
-				}
-				
-				if(temporary != 666){
-					if(rem){
-						knowledge.push(KnowledgeEntry(temporary,doomcounter));
-					}
-					temporary = 666;
-					doomcounter = 0;
-				}
-				var multiplier = 2;
-				if(bloqueo)
-				{
-					multiplier = 1;
-				}
-				bloqueo = false;
-				stuncounter = 4 * multiplier; // temporary * multiplier;
-				currentlylearning = false;
-				playMatrixAnimation(7, true);
-			break;
-			default:
-				//playMatrixAnimation(3, true);
-			}
-	}
-	listenForIRMessage(_messageChannels);
-}
-registerEvent(EventType.onIRMessage, onIRMessageX);
 
 registerMatrixAnimation({
 	frames: [[[2, 2, 2, 2, 11, 11, 11, 11], [2, 1, 1, 1, 1, 11, 11, 1], [2, 2, 2, 2, 1, 11, 11, 1], [1, 1, 1, 2, 1, 11, 11, 1], [2, 2, 2, 2, 1, 11, 11, 1], [13, 13, 13, 13, 13, 13, 13, 13], [15, 15, 15, 15, 15, 15, 15, 15], [14, 14, 14, 14, 14, 14, 14, 14]], [[2, 2, 2, 2, 11, 11, 11, 11], [2, 1, 1, 1, 1, 11, 11, 1], [2, 2, 2, 2, 1, 11, 11, 1], [1, 1, 1, 2, 1, 11, 11, 1], [2, 2, 2, 2, 1, 11, 11, 1], [14, 14, 14, 14, 14, 14, 14, 14], [13, 13, 13, 13, 13, 13, 13, 13], [15, 15, 15, 15, 15, 15, 15, 15]], [[2, 2, 2, 2, 11, 11, 11, 11], [2, 1, 1, 1, 1, 11, 11, 1], [2, 2, 2, 2, 1, 11, 11, 1], [1, 1, 1, 2, 1, 11, 11, 1], [2, 2, 2, 2, 1, 11, 11, 1], [15, 15, 15, 15, 15, 15, 15, 15], [14, 14, 14, 14, 14, 14, 14, 14], [13, 13, 13, 13, 13, 13, 13, 13]]],
@@ -266,13 +279,13 @@ registerMatrixAnimation({
 	transition: MatrixAnimationTransition.None
 });
 registerMatrixAnimation({
-	frames: [[[2, 2, 2, 1, 1, 1, 1, 1], [1, 2, 1, 1, 1, 1, 1, 1], [1, 2, 1, 1, 4, 1, 1, 1], [1, 1, 1, 1, 4, 1, 1, 1], [1, 1, 1, 1, 4, 1, 1, 1], [1, 6, 1, 1, 1, 1, 5, 5], [6, 6, 6, 1, 1, 1, 5, 1], [1, 6, 1, 1, 1, 1, 5, 5]]],
+	frames: [[[2, 2, 2, 1, 1, 1, 1, 1], [1, 2, 1, 1, 1, 1, 1, 1], [1, 2, 1, 4, 4, 4, 1, 1], [1, 1, 1, 4, 1, 4, 1, 1], [1, 1, 1, 4, 4, 4, 1, 1], [6, 1, 6, 1, 1, 1, 5, 5], [1, 6, 1, 1, 1, 1, 5, 1], [6, 1, 6, 1, 1, 1, 5, 5]]],
 	palette: [{ r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, { r: 255, g: 0, b: 0 }, { r: 255, g: 64, b: 0 }, { r: 255, g: 128, b: 0 }, { r: 255, g: 191, b: 0 }, { r: 255, g: 255, b: 0 }, { r: 185, g: 246, b: 30 }, { r: 0, g: 255, b: 0 }, { r: 185, g: 255, b: 255 }, { r: 0, g: 255, b: 255 }, { r: 0, g: 0, b: 255 }, { r: 145, g: 0, b: 211 }, { r: 157, g: 48, b: 118 }, { r: 255, g: 0, b: 255 }, { r: 204, g: 27, b: 126 }],
 	fps: 10,
 	transition: MatrixAnimationTransition.None
 });
 registerMatrixAnimation({
-	frames: [[[2, 2, 2, 1, 1, 1, 1, 1], [1, 2, 1, 1, 1, 1, 1, 1], [1, 2, 1, 4, 4, 4, 1, 1], [1, 1, 1, 4, 1, 4, 1, 1], [1, 1, 1, 4, 4, 4, 1, 1], [6, 1, 6, 1, 1, 1, 5, 5], [1, 6, 1, 1, 1, 1, 5, 1], [6, 1, 6, 1, 1, 1, 5, 5]]],
+	frames: [[[2, 2, 2, 1, 1, 1, 1, 1], [1, 2, 1, 1, 1, 1, 1, 1], [1, 2, 1, 1, 4, 1, 1, 1], [1, 1, 1, 1, 4, 1, 1, 1], [1, 1, 1, 1, 4, 1, 1, 1], [1, 6, 1, 1, 1, 1, 5, 5], [6, 6, 6, 1, 1, 1, 5, 1], [1, 6, 1, 1, 1, 1, 5, 5]]],
 	palette: [{ r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, { r: 255, g: 0, b: 0 }, { r: 255, g: 64, b: 0 }, { r: 255, g: 128, b: 0 }, { r: 255, g: 191, b: 0 }, { r: 255, g: 255, b: 0 }, { r: 185, g: 246, b: 30 }, { r: 0, g: 255, b: 0 }, { r: 185, g: 255, b: 255 }, { r: 0, g: 255, b: 255 }, { r: 0, g: 0, b: 255 }, { r: 145, g: 0, b: 211 }, { r: 157, g: 48, b: 118 }, { r: 255, g: 0, b: 255 }, { r: 204, g: 27, b: 126 }],
 	fps: 10,
 	transition: MatrixAnimationTransition.None
