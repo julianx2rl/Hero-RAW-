@@ -156,6 +156,13 @@ async function onIRMessageLearn(channel)
 		
 		// Aqui iria la revisión del conocimiento si los spheros pudiesen mandar variables...
 		
+		for (var i = 0; i < knowledge.length; i++) {
+			if(knowledge[i].id == temporary){
+				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
+				arr.splice(i, 1);
+  			}
+		}
+		
 		if(channel == 3){
 			knowledge.push(KnowledgeEntry(0,15)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
 		}else if(channel == 4){
@@ -173,23 +180,21 @@ async function onIRMessageLearn(channel)
 
 async function onIRMessageStun(channel)
 {
-	if(channel == 6 && (stuncounter <= 0))
+	if(_stunChannels.includes(channel) && (stuncounter <= 0))
 	{
 		var entry = false;
-		var rem = false; // Determina si el conocimiento ya obtenido previamente es obsoleto.
 		
 		for (var i = 0; i < knowledge.length; i++) {
 			if(knowledge[i].id == temporary){
 				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
 				if(entry.duration < doomcounter){
 					arr.splice(i, 1);
-					rem = true;
 				}
   			}
 		}
 		
 		if(temporary != 666){
-			if(!rem){
+			if(entry != false){
 				knowledge.push(KnowledgeEntry(temporary,doomcounter));
 			}
 			temporary = 666;
@@ -209,7 +214,7 @@ async function onIRMessageStun(channel)
 	}
 	
 	listenForIRMessage(_messageChannels);
-}
+}registerEvent(EventType.onIRMessage, onIRMessageStun);
 
 async function decision(){
 	if(stuncounter <= 0){
