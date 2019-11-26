@@ -33,6 +33,9 @@ var _stunChannels = [6]; // Get dunked on!
 // 7-Stunned...
 // 8-Teach! - Passing knowledge.
 // 9-Awake! - Not stunned!
+// 10-I know what I'm dealing with!
+// 11- Received - Right Here Amigo!
+// 12- Learning - Imma gonna die!
 
 function KnowledgeEntry(id, time) {
     this.id = id;
@@ -82,11 +85,12 @@ function incomingAttack(){
 }
 
 function recover(){
-	--doomcounter;
+	--stuncounter;
 	
-	if(doomcounter <= 0)
+	if(stuncounter <= 0)
 	{
-		doomtotal = 0;
+		stuncounter = 0;
+		playMatrixAnimation(9, true);
 	}
 }
 
@@ -97,6 +101,11 @@ async function startProgram() {
 	var timeinc2 = setInterval(decision, 3000); // Checks if anyknowledge about the attack has been found, and acts accordingly
 	
 	listenForIRMessage(_messageChannels); // Awaits for any interactions
+	//onIRMessageAttack(1);
+	//await delay(15)
+	//onIRMessageStun(6);
+	//await delay(20);
+	//onIRMessageAttack(1);
 }
 
 async function onIRMessageAttack(channel)
@@ -127,7 +136,6 @@ async function onIRMessageAttack(channel)
 		} else {
 			temporary = channel; // Detecta nuevo tipo de ataque
 			currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
-			playMatrixAnimation(1, true);
 		}
 	} else {
 		return;
@@ -155,6 +163,7 @@ async function onIRMessageLearn(channel)
 		}else if(channel == 5){
 			knowledge.push(KnowledgeEntry(2,45));
 		}
+		playMatrixAnimation(10, true);
 	}else{
 		return;
 	}
@@ -180,7 +189,7 @@ async function onIRMessageStun(channel)
 		}
 		
 		if(temporary != 666){
-			if(rem){
+			if(!rem){
 				knowledge.push(KnowledgeEntry(temporary,doomcounter));
 			}
 			temporary = 666;
@@ -202,7 +211,7 @@ async function onIRMessageStun(channel)
 	listenForIRMessage(_messageChannels);
 }
 
-function decision(){
+async function decision(){
 	if(stuncounter <= 0){
 		// Attack if capable
 		sendIRMessage(7, 20);
@@ -210,7 +219,7 @@ function decision(){
 	
 	if((0 < doomcounter && 0 < doomtotal) && (stuncounter <= 0 && currentlylearning == false)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
 		// Doomtotal es toda la cantidad de tiempo que dura el ataque
-		if(doomtotal * (2/3) <= doomcounter){ // Si quedan mas de 2/3 del ataque
+		if(doomtotal * (4/5) <= doomcounter){ // Si quedan mas de 4/5 del ataque
 			playMatrixAnimation(10, true); // Attack!
 			
 			startIRFollow(0, 1);
@@ -219,7 +228,7 @@ function decision(){
 			
 			stopIRFollow();
 			
-		}else if(doomtotal * (1/3) <= doomcounter){ // Si queda menos de 2/3 pero mas de 1/3
+		}else if(doomtotal * (1/3) <= doomcounter){ // Si queda menos de 4/5 pero mas de 1/3
 			playMatrixAnimation(3, true); // Run away!
 			
 			startIREvade(0, 1);
@@ -238,7 +247,13 @@ function decision(){
 			bloqueo = false;
 		}
 	} else if(stuncounter <= 0) {
-		playMatrixAnimation(1, true);
+		if(currentlylearning){
+			playMatrixAnimation(12, true);
+		}else if(0 < doomcounter){
+			playMatrixAnimation(10, true);
+		}else{
+			playMatrixAnimation(1, true);
+		}
 		
 		startIRFollow(0, 1);
 		
@@ -310,6 +325,18 @@ registerMatrixAnimation({
 });
 registerMatrixAnimation({
 	frames: [[[11, 1, 1, 10, 10, 1, 1, 11], [10, 1, 1, 10, 10, 1, 1, 10], [9, 1, 1, 10, 10, 1, 1, 9], [0, 1, 1, 10, 10, 1, 1, 0], [0, 1, 1, 10, 10, 1, 1, 0], [9, 1, 1, 1, 1, 1, 1, 9], [10, 1, 1, 10, 10, 1, 1, 10], [11, 1, 1, 10, 10, 1, 1, 11]]],
+	palette: [{ r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, { r: 255, g: 0, b: 0 }, { r: 255, g: 64, b: 0 }, { r: 255, g: 128, b: 0 }, { r: 255, g: 191, b: 0 }, { r: 255, g: 255, b: 0 }, { r: 185, g: 246, b: 30 }, { r: 0, g: 255, b: 0 }, { r: 185, g: 255, b: 255 }, { r: 0, g: 255, b: 255 }, { r: 0, g: 0, b: 255 }, { r: 145, g: 0, b: 211 }, { r: 157, g: 48, b: 118 }, { r: 255, g: 0, b: 255 }, { r: 204, g: 27, b: 126 }],
+	fps: 10,
+	transition: MatrixAnimationTransition.None
+});
+registerMatrixAnimation({
+	frames: [[[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [5, 1, 1, 1, 1, 1, 1, 11], [5, 5, 1, 11, 5, 1, 11, 11], [5, 5, 5, 5, 5, 5, 11, 11], [5, 5, 5, 5, 5, 5, 11, 11], [1, 1, 11, 5, 5, 5, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]]],
+	palette: [{ r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, { r: 255, g: 0, b: 0 }, { r: 255, g: 64, b: 0 }, { r: 255, g: 128, b: 0 }, { r: 255, g: 191, b: 0 }, { r: 255, g: 255, b: 0 }, { r: 185, g: 246, b: 30 }, { r: 0, g: 255, b: 0 }, { r: 185, g: 255, b: 255 }, { r: 0, g: 255, b: 255 }, { r: 0, g: 0, b: 255 }, { r: 145, g: 0, b: 211 }, { r: 157, g: 48, b: 118 }, { r: 255, g: 0, b: 255 }, { r: 204, g: 27, b: 126 }],
+	fps: 10,
+	transition: MatrixAnimationTransition.None
+});
+registerMatrixAnimation({
+	frames: [[[12, 1, 1, 12, 12, 1, 1, 12], [13, 1, 1, 12, 12, 1, 1, 13], [15, 1, 1, 12, 12, 1, 1, 15], [14, 1, 1, 12, 12, 1, 1, 14], [14, 1, 1, 12, 12, 1, 1, 14], [15, 1, 1, 1, 1, 1, 1, 15], [13, 1, 1, 12, 12, 1, 1, 13], [12, 1, 1, 12, 12, 1, 1, 12]]],
 	palette: [{ r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, { r: 255, g: 0, b: 0 }, { r: 255, g: 64, b: 0 }, { r: 255, g: 128, b: 0 }, { r: 255, g: 191, b: 0 }, { r: 255, g: 255, b: 0 }, { r: 185, g: 246, b: 30 }, { r: 0, g: 255, b: 0 }, { r: 185, g: 255, b: 255 }, { r: 0, g: 255, b: 255 }, { r: 0, g: 0, b: 255 }, { r: 145, g: 0, b: 211 }, { r: 157, g: 48, b: 118 }, { r: 255, g: 0, b: 255 }, { r: 204, g: 27, b: 126 }],
 	fps: 10,
 	transition: MatrixAnimationTransition.None
