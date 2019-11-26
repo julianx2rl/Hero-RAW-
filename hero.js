@@ -123,13 +123,14 @@ async function onIRMessageAttack(channel)
 		
 		for (var i = 0; i < knowledge.length; i++) {
 			if(knowledge[i].id == channel){
+				// playMatrixAnimation(8, true);
 				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
 				break;
 		  	}
 		}
 		
 		if(entry != false){ // Si tiene conocimiento.
-			sendIRMessage(channel + 3, 5);
+			//sendIRMessage(channel + 3, 5);
 			doomtotal = entry.duration;
 			doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
 			playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
@@ -183,18 +184,21 @@ async function onIRMessageStun(channel)
 	if(_stunChannels.includes(channel) && (stuncounter <= 0))
 	{
 		var entry = false;
+		var obsolete = false;
 		
 		for (var i = 0; i < knowledge.length; i++) {
 			if(knowledge[i].id == temporary){
 				entry = knowledge[i]; // Si encuentra conocimiento que aplique entonces lo toma
 				if(entry.duration < doomcounter){
 					arr.splice(i, 1);
+					obsolete = true;
 				}
   			}
 		}
 		
 		if(temporary != 666){
-			if(entry != false){
+			if(entry == false || obsolete){
+				playMatrixAnimation(8, true);
 				knowledge.push(KnowledgeEntry(temporary,doomcounter));
 			}
 			temporary = 666;
