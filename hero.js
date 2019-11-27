@@ -16,11 +16,11 @@ var currentlylearning = false; // Esta contando para registrar conocimiento nuev
 
 var _messageChannels = [0, 1, 2, 3, 4, 5, 6]; // Channels that must be noticed.
 
-var _attackChannels = [0, 1, 2]; // Notice a monster charging a attack!
+var _attackChannels = [0, 1]; // Notice a monster charging a attack!
 
-var _learnChannels = [3, 4, 5]; // Notice an ally trying to help you!
+var _learnChannels = [2, 3]; // Notice an ally trying to help you!
 
-var _stunChannels = [6]; // Get dunked on!
+var _stunChannels = [4]; // Get dunked on! 5 = Heroes use it to attack!
 
 // Animations:
 // 0-Start!
@@ -164,12 +164,10 @@ async function onIRMessageLearn(channel)
   			}
 		}
 		
-		if(channel == 3){
+		if(channel == 2){
 			knowledge.push(KnowledgeEntry(0,15)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
-		}else if(channel == 4){
+		}else if(channel == 3){
 			knowledge.push(KnowledgeEntry(1,30));
-		}else if(channel == 5){
-			knowledge.push(KnowledgeEntry(2,45));
 		}
 		playMatrixAnimation(10, true);
 	}else{
@@ -223,7 +221,7 @@ async function onIRMessageStun(channel)
 async function decision(){
 	if(stuncounter <= 0){
 		// Attack if capable
-		sendIRMessage(7, 20);
+		sendIRMessage(4, 20);
 	}
 	
 	if((0 < doomcounter && 0 < doomtotal) && (stuncounter <= 0 && currentlylearning == false)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
@@ -231,7 +229,7 @@ async function decision(){
 		if(doomtotal * (4/5) <= doomcounter){ // Si quedan mas de 4/5 del ataque
 			playMatrixAnimation(10, true); // Attack!
 			
-			startIRFollow(0, 1);
+			startIRFollow(6, 7);
 			
 			await delay(2);
 			
@@ -240,7 +238,7 @@ async function decision(){
 		}else if(doomtotal * (1/3) <= doomcounter){ // Si queda menos de 4/5 pero mas de 1/3
 			playMatrixAnimation(3, true); // Run away!
 			
-			startIREvade(0, 1);
+			startIREvade(6, 7);
 			
 			await delay(2);
 			
