@@ -37,6 +37,12 @@ var _stunChannels = [4]; // Get dunked on! 5 = Heroes use it to attack!
 // 11- Received - Right Here Amigo!
 // 12- Learning - Imma gonna die!
 
+async function onCollision() {
+	playMatrixAnimation(0, true);
+	await roll(getRandomInt(0, 359), getRandomInt(50, 70), getRandomInt(1, 3));
+}
+registerEvent(EventType.onCollision, onCollision);
+
 function KnowledgeEntry(id, time) {
     this.id = id;
     this.duration = time;
@@ -98,7 +104,7 @@ async function startProgram() {
 	playMatrixAnimation(0, true);
 	
 	var timeinc1 = setInterval(increasesecond, 1000); // Increase / Decrease all the counters
-	var timeinc2 = setInterval(decision, 3000); // Checks if anyknowledge about the attack has been found, and acts accordingly
+	var timeinc2 = setInterval(decision, 2000); // Checks if anyknowledge about the attack has been found, and acts accordingly
 	
 	listenForIRMessage(_messageChannels); // Awaits for any interactions
 	//onIRMessageAttack(1);
@@ -110,6 +116,7 @@ async function startProgram() {
 
 async function onIRMessageAttack(channel)
 {
+	//await speak("Receive " + channel.toString(10), true);
 	if(_attackChannels.includes(channel) && (stuncounter <= 0))
 	{
 		// Respuesta al ataque
@@ -138,16 +145,7 @@ async function onIRMessageAttack(channel)
 			temporary = channel; // Detecta nuevo tipo de ataque
 			currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
 		}
-	} else {
-		return;
-	}
-	
-	listenForIRMessage(_messageChannels);
-}registerEvent(EventType.onIRMessage, onIRMessageAttack);
-
-async function onIRMessageLearn(channel)
-{
-	if(_learnChannels.includes(channel) && (stuncounter <= 0))
+	} else if(_learnChannels.includes(channel) && (stuncounter <= 0))
 	{
 		if(currentlylearning){ // Va a cancelar el aprendizaje porque ya no necesita aprender, le estan pasando lo que ocupa
 			currentlylearning = false;
@@ -170,16 +168,7 @@ async function onIRMessageLearn(channel)
 			knowledge.push(KnowledgeEntry(1,30));
 		}
 		playMatrixAnimation(10, true);
-	}else{
-		return;
-	}
-	
-	listenForIRMessage(_messageChannels);
-}registerEvent(EventType.onIRMessage, onIRMessageLearn);
-
-async function onIRMessageStun(channel)
-{
-	if(_stunChannels.includes(channel) && (stuncounter <= 0))
+	}else if(_stunChannels.includes(channel) && (stuncounter <= 0))
 	{
 		var entry = false;
 		var obsolete = false;
@@ -212,11 +201,11 @@ async function onIRMessageStun(channel)
 		currentlylearning = false;
 		playMatrixAnimation(7, true);
 	}else{
-		return;
+		//decision();
 	}
 	
 	listenForIRMessage(_messageChannels);
-}registerEvent(EventType.onIRMessage, onIRMessageStun);
+}registerEvent(EventType.onIRMessage, onIRMessageAttack);
 
 async function decision(){
 	if(stuncounter <= 0){
@@ -226,6 +215,7 @@ async function decision(){
 	
 	if((0 < doomcounter && 0 < doomtotal) && (stuncounter <= 0 && currentlylearning == false)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
 		// Doomtotal es toda la cantidad de tiempo que dura el ataque
+		
 		if(doomtotal * (4/5) <= doomcounter){ // Si quedan mas de 4/5 del ataque
 			playMatrixAnimation(10, true); // Attack!
 			
@@ -234,7 +224,7 @@ async function decision(){
 			await delay(2);
 			
 			stopIRFollow();
-			
+			//await speak("Follow", true);
 		}else if(doomtotal * (1/3) <= doomcounter){ // Si queda menos de 4/5 pero mas de 1/3
 			playMatrixAnimation(3, true); // Run away!
 			
@@ -243,7 +233,7 @@ async function decision(){
 			await delay(2);
 			
 			stopIREvade();
-			
+			//await speak("Evade", true);
 		} else { // Si queda menos de 1/3 de tiempo!
 			playMatrixAnimation(4, true); // Take cover!
 			
@@ -252,6 +242,7 @@ async function decision(){
 			await delay(2);
 			
 			bloqueo = false;
+			//await speak("Shield", true);
 		}
 	} else if(stuncounter <= 0) {
 		if(currentlylearning){
@@ -262,7 +253,7 @@ async function decision(){
 			playMatrixAnimation(1, true);
 		}
 		
-		startIRFollow(0, 1);
+		startIRFollow(6, 7);
 		
 		await delay(2);
 		
