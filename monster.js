@@ -6,13 +6,11 @@ var _messageChannels = [7];
 var actions = [];
 
 async function startProgram() {
-	startIRBroadcast(6, 7);
-	
 	listenForIRMessage(_messageChannels);
 
 	while(0 <= monsterHP){
 		await decideattack();
-		playMatrixAnimation(0, true);
+		//playMatrixAnimation(0, true);
 		await delay(10);
 	}
 	
@@ -20,20 +18,30 @@ async function startProgram() {
 }
 
 async function decideattack(){
-	attacktype = getRandomInt(0, 3);
+	attacktype = getRandomInt(0, 2);
+	await speak("Decide " + attacktype.toString(10), true);
 	if (attacktype <= 1) {
 		playMatrixAnimation(1, true);
 		sendIRMessage(0, 64);
+		await speak("Start Attacktype 1"); 
+		startIRBroadcast(6, 7);
 		await delay(15);
 		playMatrixAnimation(5, true);
-		sendIRMessage(6, 64);
-	} else if (1 < attacktype && attacktype <= 2) {
+		stopIRBroadcast(6,7);
+		await speak("Finish Attacktype 1");
+		await sendIRMessage(4, 64);
+	} else if (1 < attacktype && attacktype <= 99) {
 		playMatrixAnimation(2, true);
 		sendIRMessage(1, 64);
+		await speak("Start Attacktype 2"); 
+		startIRBroadcast(6, 7);
 		await delay(30);
 		playMatrixAnimation(5, true);
-		sendIRMessage(6, 64);
+		stopIRBroadcast(6, 7);
+		await speak("Finish Attacktype 2");
+		await sendIRMessage(4, 64);
 	} else {
+		await speak("Attacktype run");
 		playMatrixAnimation(0, true);
 		await roll(getRandomInt(0, 359), getRandomInt(50, 70), getRandomInt(1, 3));
 	}
