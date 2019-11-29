@@ -165,8 +165,10 @@ async function onIRMessageAttack(channel)
 		
 		if(channel == 2){
 			knowledge.push(KnowledgeEntry(0,15)); // No podemos enviar datos, por lo que debemos solamente darle la respuesta al sphero para simular transferencia de conocimiento.
+			doomcounter = 15;
 		}else if(channel == 3){
 			knowledge.push(KnowledgeEntry(1,30));
+			doomcounter = 30;
 		}
 		playMatrixAnimation(10, true);
 	}else if(_stunChannels.includes(channel) && (stuncounter <= 0))
