@@ -141,6 +141,7 @@ async function onIRMessageAttack(channel)
 			doomtotal = entry.duration;
 			doomcounter = entry.duration; // Entonces deberia alejarse o bloquear cuando el tiempo esté a punto de acabar.
 			playMatrixAnimation(2, true); // Yeah... this is BIG BRAIN TIME!!!
+			sendIRMessage(channel + 2, 32);
 		} else {
 			temporary = channel; // Detecta nuevo tipo de ataque
 			currentlylearning = true; // Empezara a contar el tiempo que tome en detectar el canal 6
@@ -210,7 +211,7 @@ async function onIRMessageAttack(channel)
 async function decision(){
 	if(stuncounter <= 0){
 		// Attack if capable
-		sendIRMessage(4, 20);
+		sendIRMessage(5, 32);
 	}
 	
 	if((0 < doomcounter && 0 < doomtotal) && (stuncounter <= 0 && currentlylearning == false)){ // Está bajo ataque y ya sabe cuanto le queda! Y aun no está bloqueando...
